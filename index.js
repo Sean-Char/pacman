@@ -2,7 +2,7 @@ const width = 28
 const grid = document.querySelector('.grid')
 const scoreDisplay = document.getElementById('score')
 let squares = [] 
-let count = 0
+let score = 0
 
 // 28 * 28 = 784
 
@@ -107,22 +107,37 @@ function control(e) {
     }
     squares[pacmanCurrentIndex].classList.add('pacman')
     pacDotEaten()
-    //moveGhost()
+    powerPelletEaten()
+    checkForGameWon()
+    checkForGameOver()
 }
 document.addEventListener('keyup', control)
 
 // Eat pac dot & display score
 function pacDotEaten() {
     if (squares[pacmanCurrentIndex].classList.contains('pac-dot')) {
-        count++
-        scoreDisplay.innerHTML = count
         squares[pacmanCurrentIndex].classList.remove('pac-dot')
+        score++
+        scoreDisplay.innerHTML = score
     }
+}
+
+function powerPelletEaten() {
+    // if square pacman is in contains power pellet
     if (squares[pacmanCurrentIndex].classList.contains('power-pellet')) {
-        count += 10
-        scoreDisplay.innerHTML = count
+        
+        score += 10
+
         squares[pacmanCurrentIndex].classList.remove('power-pellet')
+
+        ghosts.forEach(ghost => ghost.isScared = true)
+
+        setTimeout(unScareGhost, 10000);
     }
+}
+
+function unScareGhost() {
+    ghosts.forEach(ghost => ghost.isScared = false)
 }
 
 // Make Ghost blueprint
@@ -146,9 +161,10 @@ const ghosts = [
 ]
 
 // Draw my ghost onto the grid
-ghosts.forEach(ghost => 
-    squares[ghost.startIndex].classList.add(ghost.className)
-);
+ghosts.forEach(ghost => {
+    squares[ghost.currentIndex].classList.add(ghost.className)
+    squares[ghost.currentIndex].classList.add('ghost')
+})
 
 // Pass each ghost object to move function
 ghosts.forEach(ghost => moveGhost(ghost))
@@ -158,12 +174,66 @@ function moveGhost(ghost) {
     let direction = directions[Math.floor(Math.random()* directions.length)]
     
     ghost.timerId = setInterval(function() {
-        squares[ghost.currentIndex].classList.remove(ghost.className)
+        if (!squares[ghost.currentIndex + direction].classList.contains('wall') &&
+            !squares[ghost.currentIndex + direction].classList.contains('ghost')) {
+            
+            // remove any ghost
+            squares[ghost.currentIndex].classList.remove(ghost.className)
+            squares[ghost.currentIndex].classList.remove('ghost', 'scared-ghost')
+            // add direction to current index
+            ghost.currentIndex += direction 
+            // add back ghost class
+            squares[ghost.currentIndex].classList.add(ghost.className)
+            squares[ghost.currentIndex].classList.add('ghost')
+        } else {
+            direction = directions[Math.floor(Math.random() * directions.length)]
+        }
 
-        ghost.currentIndex += direction 
+        // if ghost is currently scared
+        if (ghost.isScared) {
+            squares[ghost.currentIndex].classList.add('scared-ghost')
+        }
 
-        squares[ghost.currentIndex].classList.add(ghost.className)
+        // if ghost is currently scared and pacman eats
+        if (ghost.isScared && squares[ghost.currentIndex].classList.contains('pacman')) {
+            squares[ghost.currentIndex].classList.remove(ghost.className, 'ghost', 'scared-ghost')
+            
+            ghost.currentIndex = ghost.startIndex
+            score += 100
 
+            squares[ghost.currentIndex].classList.add(ghost.className, 'ghost')
+        }
+        checkForGameOver()
     }, ghost.speed)
+}
+
+// check for game over
+function checkForGameOver() { 
+    if (squares[pacmanCurrentIndex].classList.contains('ghost') && 
+            !squares[pacmanCurrentIndex].classList.contains('scared-ghost')) {
+        
+        // stop moving the ghost
+        ghosts.forEach(ghost => clearInterval(ghost.timerId))
+
+        // remove event listener
+        document.removeEventListener('keyup', control)
+
+        // display game over
+        scoreDisplay.textContent = " GAME OVER"
+    }
+}
+
+// check for game won
+function checkForGameWon() {
+    if (score === 374) {
+        // stop each ghost moving 
+        ghosts.forEach(ghost => clearInterval(ghost.timerId))
+
+        // remove the eventListener for the control
+        document.removeEventListener('keyup', control)
+
+        // tell our user we have won
+        scoreDisplay.textContent = " YOU WIN"
+    }
 }
 
