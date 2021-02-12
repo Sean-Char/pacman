@@ -62,3 +62,15 @@ html, body {
     background-color: orange;
     border: none;
 }
+
+.scared-ghost {
+    background-color: #fff;
+    border: none;
+    animation: blinkingBackground 2s infinite;
+}
+
+@keyframes blinkingBackground {
+	25%		{ background-color: #0e778b;}
+	75%		{ background-color: #5094bb;}
+	100%	{ background-color: #04a1d5;}
+}
